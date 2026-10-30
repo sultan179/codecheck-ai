@@ -1,0 +1,19 @@
+# Private / never committed (see CLAUDE.md §4)
+CLAUDE.md
+private/
+.claude/
+.env
+*.pdf
+data/raw/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Node
+node_modules/
+dist/
+
+# macOS
+.DS_Store
