@@ -9,3 +9,4 @@ class Settings(BaseSettings):
     postgres_db: str
     postgres_host: str= "127.0.0.1"
     postgres_port: int= 5432
+    anthropic_api_key: str
