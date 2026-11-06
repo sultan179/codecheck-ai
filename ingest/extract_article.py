@@ -4,10 +4,10 @@ from pydantic import ValidationError
 from app.config import Settings
 from app.llm import estimate_cost_usd
 from schemas import ExtractedArticle
-from guards import text_is_in_source
+from guards import text_is_in_source, article_boundaries_ok
 from split_articles import PDF_PATH, TARGET_ARTICLES, build_heading_index
 
-PDF_PATH = "data/raw/nbc-ae-2023-printing2.pdf"
+
 
 SYSTEM_PROMPT = (
     "You extract ONE article from raw text of a building code page. "
@@ -17,18 +17,24 @@ SYSTEM_PROMPT = (
     "(no trailing dot, no sentence numbers). Never invent or paraphrase text."
 )
 
-def get_page_text(document:pymupdf.Document, page_number:int)->str:
-    return document[page_number-1].get_text()
 
-settings=Settings()
-client=anthropic.Anthropic(api_key=settings.anthropic_api_key)
-document=pymupdf.open(PDF_PATH)
+HEADER_BOTTOM_Y = 60   # blocks starting above this line are the page header
+FOOTER_TOP_Y = 765     # blocks starting below this line are the page footer
+
+def get_body_text(page:pymupdf.Page)->str:
+    body_blocks=[]
+    for block in page.get_text("blocks"):
+        block_top_y=block[1]
+        if HEADER_BOTTOM_Y<= block_top_y <= FOOTER_TOP_Y:
+            body_blocks.append(block[4])
+    return "".join(body_blocks)
+
+
 
 # The article may continue onto the next page, so we send both pages.
 def get_two_pages_text(document: pymupdf.Document, page_number: int) -> str:
-    # The article may continue onto the next page, so we send both pages.
-    this_page = document[page_number - 1].get_text()
-    next_page = document[page_number].get_text()
+    this_page = get_body_text(document[page_number-1])
+    next_page = get_body_text(document[page_number])
     return this_page + "\n" + next_page
 
 
@@ -57,6 +63,9 @@ if __name__ == "__main__":
         except ValidationError:
             print(article_id, "| FAILED schema validation")
             continue
+        claimed_id=article.article_id.rstrip(".")
         text_ok = text_is_in_source(article.text, page_text)
-        print(article_id, "| id ok:", article.article_id == article_id,
-              "| text in source:", text_ok, "| cost:", round(cost, 5))
+        boundaries_ok = article_boundaries_ok(claimed_id, article.title, article.text, page_text)
+        print(article_id, "| id ok:", claimed_id == article_id,
+              "| text in source:", text_ok, "| complete:", boundaries_ok,
+              "| cost:", round(cost, 5))
