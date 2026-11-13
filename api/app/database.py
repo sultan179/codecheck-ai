@@ -16,3 +16,12 @@ def is_database_reachable(settings:Settings)->bool:
         return True
     except psycopg.OperationalError:
         return False
+    
+def open_connection(settings: Settings) -> psycopg.Connection:
+    return psycopg.connect(
+        host=settings.postgres_host,
+        port=settings.postgres_port,
+        dbname=settings.postgres_db,
+        user=settings.postgres_user,
+        password=settings.postgres_password,
+    )

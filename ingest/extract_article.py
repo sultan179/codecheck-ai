@@ -6,7 +6,8 @@ from app.llm import estimate_cost_usd
 from schemas import ExtractedArticle
 from guards import text_is_in_source, article_boundaries_ok
 from split_articles import PDF_PATH, TARGET_ARTICLES, build_heading_index
-
+from app.database import open_connection
+from article_store import save_article
 
 
 SYSTEM_PROMPT = (
@@ -83,8 +84,12 @@ if __name__ == "__main__":
     document = pymupdf.open(PDF_PATH)
     index = build_heading_index(document)
 
-    for article_id in TARGET_ARTICLES:
-        page_text = get_two_pages_text(document, index[article_id][0])
-        article, attempts, cost, reason = extract_verified_article(client, article_id, page_text)
-        status = "VERIFIED" if article else "REVIEW: " + reason
-        print(article_id, "|", status, "| attempts:", attempts, "| cost:", round(cost, 5))
+    with open_connection(settings) as connection:
+        for article_id in TARGET_ARTICLES:
+            source_page = index[article_id][0]
+            page_text = get_two_pages_text(document, source_page)
+            article, attempts, cost, reason = extract_verified_article(client, article_id, page_text)
+            if article:
+                save_article(connection, article, article_id, source_page)
+            status = "VERIFIED, saved" if article else "REVIEW: " + reason
+            print(article_id, "|", status, "| attempts:", attempts, "| cost:", round(cost, 5))
