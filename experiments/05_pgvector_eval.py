@@ -17,14 +17,13 @@ with open_connection(settings) as connection:
     for question, expected_id in EVAL_QUESTIONS:
         results = search_articles(connection, model.encode(question), MODEL_NAME, RANK_ALL)
         ranked_ids = []
-        for article_id, similarity in results:
-            ranked_ids.append(article_id)
+        for article in results:
+            ranked_ids.append(article.article_id)
         rank = ranked_ids.index(expected_id) + 1
         if rank == 1:
             hits_at_1 += 1
         if rank <= 3:
             hits_at_3 += 1
-        top_id, top_similarity = results[0]
-        print(f"rank {rank} | expected {expected_id} | top {top_id} ({top_similarity:.3f}) | {question}")
-
+        top = results[0]
+        print(f"rank {rank} | expected {expected_id} | top {top.article_id} ({top.similarity:.3f}) | {question}")
 print(f"hit@1: {hits_at_1}/{len(EVAL_QUESTIONS)}   hit@3: {hits_at_3}/{len(EVAL_QUESTIONS)}")
