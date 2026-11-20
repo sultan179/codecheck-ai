@@ -2,7 +2,7 @@ from typing import Literal
 import anthropic
 from pydantic import BaseModel, Field
 from app.claims import ExtractedClaim
-from app.llm import estimate_cost_usd
+from app.llm import LLM_MODEL, estimate_cost_usd
 from app.retrieval import RetrievedArticle
 from app.grounding import text_is_in_source
 
@@ -53,7 +53,7 @@ def build_review_message(claim: ExtractedClaim, articles: list[RetrievedArticle]
 def judge_claim(client: anthropic.Anthropic, claim: ExtractedClaim,
                 articles: list[RetrievedArticle]) -> tuple[Verdict, float]:
     response = client.messages.parse(
-        model="claude-haiku-5-5",
+        model=LLM_MODEL,
         max_tokens=1000,
         thinking={"type": "disabled"},
         system=SYSTEM_PROMPT,

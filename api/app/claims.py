@@ -2,7 +2,7 @@
 import anthropic
 from pydantic import BaseModel, Field
 
-from app.llm import estimate_cost_usd
+from app.llm import LLM_MODEL, estimate_cost_usd
 from app.grounding import  text_is_in_source
 
 class ExtractedClaim(BaseModel):
@@ -36,7 +36,7 @@ SYSTEM_PROMPT = (
 
 def extract_claims(client: anthropic.Anthropic, spec_text: str) -> tuple[ClaimList, float]:
     response = client.messages.parse(
-        model="claude-haiku-5-5",
+        model=LLM_MODEL,
         max_tokens=2000,
         thinking={"type": "disabled"},
         system=SYSTEM_PROMPT,
